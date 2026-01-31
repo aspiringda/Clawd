@@ -65,4 +65,4 @@ RUN mkdir -p /data/openclaw
 ENTRYPOINT ["tini", "--"]
 
 # Start OpenClaw gateway
-CMD ["sh", "-lc", "openclaw gateway --bind 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-lc", "openclaw gateway --allow-unconfigured --bind 0.0.0.0 --port ${PORT}"]
