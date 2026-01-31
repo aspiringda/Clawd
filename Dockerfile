@@ -1,8 +1,12 @@
-# Use Debian-based Node image for easier Chromium deps
 FROM node:22-bookworm-slim
 
-# System deps for running Chromium headless + common fonts
+# Install system deps:
+# - git: required for npm install (some packages fetch via git)
+# - tini: clean PID 1 signal handling
+# - chromium + libs: needed for WhatsApp Web / browser automation
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    tini \
     chromium \
     ca-certificates \
     fonts-liberation \
@@ -37,16 +41,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxss1 \
     libxtst6 \
     xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/*
 
-# Install OpenClaw CLI
+# Install OpenClaw globally
 RUN npm install -g openclaw
 
-# Persist OpenClaw state/config to /data (mount a Railway Volume here)
+# Persist OpenClaw state/config to /data (mount a Railway Volume at /data)
 ENV OPENCLAW_STATE_DIR=/data/openclaw
 ENV OPENCLAW_CONFIG_PATH=/data/openclaw/openclaw.json
 
-# Help OpenClaw / Chrome find Chromium in this container
+# Help OpenClaw find Chromium inside the container
 ENV CHROME_PATH=/usr/bin/chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
@@ -57,5 +61,8 @@ EXPOSE 18789
 # Ensure state dir exists
 RUN mkdir -p /data/openclaw
 
-# Start the gateway
+# Use tini as PID 1 (handles shutdown/restart cleanly)
+ENTRYPOINT ["tini", "--"]
+
+# Start OpenClaw gateway
 CMD ["sh", "-lc", "openclaw gateway --bind 0.0.0.0 --port ${PORT}"]
